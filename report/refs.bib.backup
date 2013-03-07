@@ -1,0 +1,25 @@
+@string{jgr = "J.~Geophys.~Res."}
+
+@INBOOK{chicago,
+   title = "The Chicago Manual of Style",
+   publisher = "University of Chicago Press",
+   edition = "Thirteenth",
+   year = 1982,
+   pages = "400--401",
+   key = "Chicago"
+}
+   
+@ONLINE{wiki_soko,
+  author = "Unknown author",
+  title = "sokoban on wikipedia",
+  month = "Oktober",
+  year = "2012",
+  url = "http://en.wikipedia.org/wiki/Sokoban"
+}
+
+@mscthesis{aldis:msc,
+        author = "John W. Aldis",
+        title = "A polynomial time algorithm to determine maximal balanced equivalence relations",
+        institution = "University of Warwick",
+        year = {2005},
+}

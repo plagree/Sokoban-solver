@@ -1,0 +1,7 @@
+#define WALL '#'
+#define PLAYER '@'
+#define P_ON_GOAL '+'
+#define BOX '$'
+#define B_ON_GOAL '*'
+#define GOAL '.'
+#define EMPTY ' '

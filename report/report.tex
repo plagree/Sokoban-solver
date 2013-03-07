@@ -1,0 +1,473 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumerate}
+
+\usepackage{listings}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{courier}
+\usepackage{fullpage}
+\usepackage{url}
+
+
+% Title Page
+\title{}
+\author{}
+
+
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+
+
+\textsc{\LARGE Royal Institute of Technology}\\[1.5cm]
+
+
+%\includegraphics[width=0.3\textwidth]{kth_mathematics_rgb.jpg}\\[1cm]
+\begin{figure}[h]
+        \centering
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{caroline.jpg}
+                \caption{Caroline}
+                \label{fig:Caroline}
+        \end{subfigure}%
+        ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{paul.jpg}
+                \caption{Paul}
+                \label{fig:Paul}
+        \end{subfigure}
+        \\ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{sindri.jpeg}
+                \caption{Sindri}
+                \label{fig:Sindri}
+        \end{subfigure}
+          ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc. 
+          %(or a blank line to force the subfigure onto a new line)
+        \begin{subfigure}[b]{0.2\textwidth}
+                \centering
+                \includegraphics[width=\textwidth]{tobi.jpeg}
+                \caption{Tobias}
+                \label{fig:Tobias}
+        \end{subfigure}
+        %\caption{Pictures of animals}\label{fig:animals}
+\end{figure}
+
+\textsc{\Large Artificial intelligence, dd2380 }  %\\ Instructor: Tobias Ryden , \emph{tryd@math.kth.se}}\\[0.5cm]
+
+\hrulefill \\[0.4cm]
+{ \huge \bfseries Final project: sokoban}\\[0.4cm]
+\hrulefill \\[1.5cm]
+
+
+
+    Caroline Laurène Kéramsi, keramsi@kth.se, XXXXXX-XXXX \\
+    Paul Lagrée, lagree@kth.se, 900629-T133 \\
+    Sindri Magnússon, sindrim@kth.se, 871209-7156 \\
+    Tobias Johannes, Uebbing@kth.se, 900617-T251 \\
+
+
+\vfill
+% Bottom of the page
+{\large \today}
+
+\end{center}
+\end{titlepage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%
+%%%%%%%%%% Report starts
+%%%%%%%%%%
+\cleardoublepage
+\tableofcontents
+\newpage
+
+\abstract{Sokoban is a famous game invented during the eighties. Even if the rules are quite simple, it is often studied in artificial intelligence since it has been proved to be a $NP$-hard and $PSPACE$ problem. 
+This difficulty is not only due to the branching factor but also to the enormous depth of the search tree~\cite{wiki_soko}.
+In order to design a good sokoban solver it is necessary to find smart ways to make computation fast and prune the search tree as efficiently as possible. 
+In this report, we will present the different techniques we implemented in our Sokoban solver. 
+We will explain both why we decided to use them in our project and how well they improved our solver (in terms of time and number of nodes explored).}
+
+\section{Introduction}
+	\subsection{Problem description}
+    The original setting of the puzzle is a warehouse and the problem is to push boxes
+    around to predefined storage locations.  
+    But the underlying problem is of course much more abstract.  The rules are simple~\cite{wiki_soko}: 
+    %cite http://en.wikipedia.org/wiki/Sokoban
+    \begin{enumerate}[I]
+        \item  Only one box can be pushed at a time.
+        \item A box cannot be pulled.
+        \item The player cannot walk through boxes or walls.
+        \item The puzzle is solved when all boxes are located at storage locations.
+    \end{enumerate}
+    
+    \subsection{Project organization}
+	We started with a simple implementation which was able to solve a small number of boards. 
+	Then we applied different methods to improve it.  
+        We got a lot of ideas from \cite{solving_soko} and \cite{wiki_soko}.
+	As it takes time to get feedbacks from the server, we wrote our own bash script to evaluate the number of boards we can to solve.
+	This script runs our solver on 100 boards (server port 5032).
+	We did not want to wait too long for the results of the script so we limited the search time to 30 seconds per board.
+
+	Team work on a software project can be challenging because it involves concurrent work on the same source code. 
+	That's why we decided to use a revision control software, git. 
+	Git enables us to work concurrently on the same source code more easily.
+	It also keeps track of the history of the project.
+	Thus we can compare the results of the current version with an older one
+	and we can revert the changes if the performance decreased.
+	Our git repository is on GitHub \url{https://github.com/carolineKer/sokoban.git}.
+
+      
+
+\section{First version}
+	\subsection{States representation}
+	A state can be represented by the position of the player and the position of each box on the map. 
+	Yet this representation is naive because it considers that states which differ only by a player move are different.
+	For example the two following situations are considered as two different states even if we can go from one to the other only by moving the 
+	player without touching a box.
+	\begin{verbatim}
+
+	#############                 #############
+	#  .    $   #                 #  .    $   #
+	#     @     #                 #@          #
+	###$#########                 ###$#########
+	#     $  ...#                 #     $  ...#
+	#############                 #############
+
+	\end{verbatim}
+
+
+	We want to have a new state when we push a box and not when we move the player.
+	So instead of considering the player position, we consider the area he can reach.
+	This area can easily be computed by a recursive algorithm.
+	The two situations above can then be represented as the same state:
+	\newpage
+	\begin{verbatim}
+	#############   O: reachable area
+	#XOOOOOO$OOO#   X: leftest, upmost case of the reachable area 
+	#OOOOOOOOOOO#      (called normalized player position)
+	###$#########
+	#     $  ...#
+	#############
+
+	\end{verbatim}
+	Two states can be compared by looking at the boxes and the leftest, upmost case of the reachable area.
+	To avoid to save too many data, we destroy the reachable area when computed, and we keep only the normalized player position.
+	
+	\subsection{Search algorithm}
+	To expand a state, we look at each direction of each box. 
+	If a direction is inside the area that the player can reach, we look if there is a hindrance (box or wall) in the opposite direction.
+	If this is not the case, the box can be pushed and we can create a new state.
+
+	\begin{verbatim}
+	#############  Here we can push down the leftest box because 
+	#X .    $   #  the upper direction is inside the reachable 
+	#  U        #  area and there is neither a wall nor a box
+	###$#########  in the opposite direction
+	#  D  $  ...#  
+	#############  X: normalized player position
+
+	We can create a new state:
+	#############
+	#X .    $   #
+	#           #
+	### #########
+	#  $  $  ...#
+	############# X: normalized player position
+	\end{verbatim}
+
+	The new state is compared with the states which have already been created. 
+	If the state existed already, we delete the new state.
+	Otherwise we add it to the list of created states and to the fifo of the states wich must be expanded.
+	Then we can take the next state in the fifo and repeat the procedure.
+	This is a breadth-first search algorithm.
+
+	\begin{figure}[h]
+	\centerline{\includegraphics[height=5 cm, width=5cm]{./state_fifo.png}}
+	\end{figure}
+
+	We stop when we reach a final state (ie. a state where all the boxes are on a goal).
+	Once we found a final state, we apply a pathfinding algortihm to build the solution string from the succession of states.
+ With this first version we could only solve 1 board out of 100. 
+
+	\subsection{Pathfinding algorithm}
+A path finding function is most obvious necessary to generate the movement that the player has to make besides pushing the boxes.
+This function first checks whether the given start is not already the desired goal. In that case the function would just return an empty string. 
+Otherwise this function calls a helperfunction which executes the actual path finding algorithm.
+
+The algorithm used within that function is a directed DFS, 
+that means it will dynamically try to go in the direction of the goal instead of always start to explore one specific direction. 
+The algorithm first checks whether it has reached the aim. If that is true it would return. 
+If not it tries to get an passable neigbour point. If the algorithm found one it puts this point on the end of the path point vector. 
+Afterwards it calls itself recursivley with this point as start and the the same goal as before.
+In the case there is no suitable neighbour this point is stored within deadends 
+point vector to make sure that the algorithm will not get to this path point again. 
+Then it calls itself recursivley again with the predecessor stored in the path point vector. 
+It can happen that the algorithm returns back to a path point and it came from the last possible move option for that point. 
+Than the algorithm first has to remove this cell from the path point vector before it does the recursive call.
+
+Next the functionality of the function that select the next path point will be described in more details, 
+since it dynamically decides which direction is best to go to reach the goal as fast as possible. 
+It first calculates the distance of the x and y position of the goal to the one of the aim. 
+Then it tests which of the four directions is passable and stores the result in an array. 
+It decides which direction to go depending on the algebraic sign of the distance and whether this direction is passable. 
+It has a preference to go first into the x direction and then in the y direction. 
+If none of the prefered directions is suitable it attempts to choose the first passable direction within the passable array. 
+If all that fails the return point stays the current point which will be given back to the algorithm.
+
+In the end the path finding function generates a solution string by going through the path point vector and returns it.
+
+Point of improvement would be to introduce a depth limit within the pathfinding algorithm that is orientated on the manhattan distance to the goal to enable iterative deepening. 
+Reversing the order of the prefered dirctions and run the algorithm again before increasing the depth limit would improve the perfomance additionally. 
+But since this path finding algorithm effects the perfomance of the agent only very restricted the project team concentrated first on improving
+the solution finding algorithm.
+
+\section{Improvements}
+    \subsection{Hash table for repeated states}
+    To avoid to explore too many states, we decided to save all explored states in a data structure. 
+    When a state is created, we compare it to the already explored states. 
+    If it has already been explored, then we do not add it to the fifo of states which must be expanded. 
+    By doing so, we expect to reduce the search space. 
+    In our first version, we used to save explored states in a simple list.
+	Comparing the new state with the states stored in the list was done in linear time.
+    This linear time was slowing down our implementation, so we decided to use another data structure for the explored states.
+    
+    Instead of using a simple list, we finally decided to store the states in a hash table.
+    It permits to explore much more nodes in the tree since it runs much faster. 
+    We compute a hash given the positions of boxes and the normalized player position. 
+    We concatenate these parameters in a single string and compute the hash using an existing function for strings in the standard library.
+	Our hash function is designed to avoid collisions so the comparaison between the new state and other states is done in constant time.
+
+	\subsection{Deadlocks}
+	It is not possible to go from all states to the final state.  
+	For example if a box is blocked by a wall in both vertical and horizontal directions and is not located on a goal.  
+	Since the box is stuck it can never reach a goal and hence it is not possible to go from this state to the final state.    
+	We call such states deadlocks.
+
+	\begin{verbatim}
+	#############  The rightest box is stuck in a corner.
+	#X .       $#  This state is a deadlock.
+	#           # 
+	###$######### 
+	#     $  ...# 
+	############# 
+	\end{verbatim}
+
+        Search in the subtree below a deadlock is just a waste since it is not possible to reach the final state from there.  
+        It is therefore very desirable to be able to detect deadlocks as soon as possible.
+	  \subsubsection{Frozen deadlocks}
+	    We say that a box is frozen if it can neither be moved in horizontal nor vertical direction.  
+	    A frozen box can sometimes be made un-frozen.  For example if the box is blocked by a box that is not frozen.  
+	    Frozen deadlock occurs when a box is not located on a goal, frozen and can not be made un-frozen.  
+	    A box can not be made un-frozen if it can not be moved in horizontal direction because of either:
+	
+	    \begin{enumerate}[I]
+                \item There is a wall on either the left or right side of the box.
+                \item There is a frozen box on either the left or right side of the box.
+            \end{enumerate}
+            and it can not be moved in vertical direction because either: 
+            \begin{enumerate}[I]
+                \item There is a wall either above or below the box.
+                \item There is a frozen box either above or below the box.
+            \end{enumerate}
+            With these rules we can recursively check if a box causes a frozen deadlock.  
+            The only problem is that we can get stuck in loop if some of the boxes in the recursion checks if the original box causes a frozen deadlock.  
+            This can be avoided by treating all already checked box as a wall ~\cite{frozen_deadlock}.    
+            The initial state should not contain a frozen deadlock.  
+            For each new state after the initial state we check if the newly moved box is on goal and if not we check if it causes a frozen deadlock. 
+            Even if the box is on goal the recursive algorithm could detect a frozen deadlock if the move freezes some other box that is not on a goal.  
+            There was not enough time to implement this though.  
+            The idea of the recursive algorithm is taken from  ~\cite{frozen_deadlock}.
+          \subsubsection{Dead positions}
+            There are some locations on the map such that if we put a box there it will always lead to a deadlock, we call those locations dead positions.  
+			These positions do not depend on the position of other boxes.
+			Hence they can be computed once, at the beginning of the game.
+            Then we just need to make sure that we do not move boxes to these dead positions. 
+            By doing that, we reduce a lot the search space since we remove many possibilities where we can push boxes.
+			
+
+			Our algorithm is able to detect 3 kinds of dead positions.
+			The first configuration is the easiest to detect. A box is blocked if two orthogonal directions are blocked:
+            \begin{verbatim}
+			             #      #        #$       #        #       
+			            #$      $#        #      #$       #$# 
+			\end{verbatim}
+
+			A box is also in a dead position if it is blocked on a line against a wall where there is no goal.
+			To detect this kind of configuration, our algorithm starts from a dead position and progress along the wall until it finds
+			another dead position (the line is dead), the end of the wall (the line is not dead) or a goal (the line is not dead).
+		\begin{verbatim}
+		##           
+		 #     #######          The box is stuck in a vertical or horizontal line
+		$#     #  $  #          against a wall which contains no goals.
+		 #
+		##
+
+	    \end{verbatim}
+
+			The last configuration are tunnels without goals which end on dead positions wich are blocked by three walls:
+		\begin{verbatim}
+		 #########              If we push a box in this tunnel, 
+		#D     $                we can not push it out.
+		 #########
+
+		#@########              Here the dead position is only blocked by two walls. 
+		#D     $                The player can enter the tunnel and push the box out. 
+		##########              It is not a dead tunnel.
+
+		\end{verbatim}
+ 
+		However we have to consider the special case where the player and the box are already inside the tunnel. 
+		This can happen at the beginning of the game.
+		\begin{verbatim}
+		 #########              Even if the case O is inside a dead tunnel, 
+		#D @   $O               we must push the box on it.
+		 #########               
+		\end{verbatim}
+
+	\subsection{Tunnels}
+	At the beginning of the game, we run an algorithm on the map to detect tunnels.
+	The entries of a tunnel are noted A and B. The cases inside the tunnel are marked as C.
+	We consider that a case can be part of a tunnel if it does not contain a goal 
+	and if either both vertical or both horizontal directions are blocked.
+	Tunnels must also contain at least two cases.
+	\begin{verbatim}
+    ##############
+    # ACCCCB     #
+    # ######  #A#
+    #         #C#
+    #   #A#   #B#
+    #   #B#   #.#
+    #         #A#
+    #         #B#
+    #############
+	\end{verbatim}
+
+	\subsubsection{Movements inside a tunnel}
+	We implemented a special move for boxes inside a tunnel. 
+	When a box which is on a tunnel entry (for example A) is pushed inside the tunnel (to a case C), the
+	box is directly \textit{teleported} to the other tunnel entry (for example B).
+	This technique cuts down the depth of the solution.
+
+	\begin{verbatim}
+	Going through a tunnel of n cases without tunnel teleportation: 
+	    --> n pushes needed
+	  ####    ####    ####    ####   ####
+	@$ACCB   @$CCB    @$CB    A@$B   AC@$
+	  ####    ####    ####    ####   ####
+
+	Going through a tunnel of n cases with tunnel teleportation: 
+	    --> 2 pushes needed
+	  ####    ####   ####
+	@$ACCB   @$CCB   AC@$
+	  ####    ####   ####
+
+	\end{verbatim}
+
+	\subsubsection{Tunnel deadlock}
+	When a box is pushed to a tunnel entry (A or B), we check that there is no box on the other entry.
+	If this condition is not met, the push will lead to a deadlock and we can prune this move.
+
+	\begin{verbatim}
+	 ########       This is a tunnel deadlock.
+	@$      $       The boxes can not be pushed out of the tunnel.
+	 ########       
+	\end{verbatim}
+
+	\subsection{Search algorithm}
+	\subsubsection{A*}
+	After having coded a simple BFS algorithm, we decided to improve it in an A* algorithm. 
+	As long as the solution state is not found while expanding successor nodes it keeps on expanding. The function which expands the states return the solution state in case it found it. Otherwise it adds all successor states that are unhandled and have no deadlocks to a priority queue. 
+	The priority queue is automatically sorted by the heuristic values of the states. 
+	Then the current state is set to the first state in the priority queue, the one with the smallest heuristic value. 
+	This continues until the solution state is found.
+	
+	The heuristic function computes the Euclidean distance (also know as 2-norm distance) of each  box to a goal. 
+	Of course we do not use twice the same goal and we use the closest goal when it is possible. It means we take a new box and we compute the lowest distance to a free goal. Then we loop on all boxes and add all distances to return the sum. 
+	This implementation has improved our Sokoban solver by reducing the number of nodes needed to be explored.
+
+	\begin{figure}[h]
+	\centerline{\includegraphics[height=5 cm, width=5cm]{./priority_state.png}}
+	\end{figure}
+
+	\subsubsection{IDA*}
+	The IDA* algorithm is meant to decrease the number of nodes that has to be explored even more:
+
+	The implemented IDA* is based on IDDFS. It uses the same function to expand the states as the A* algorithm described above. 
+	But it got a different function to choose from the priority queue which state should be expanded next. 
+	This function considers only states with a cost value under a specific cost limit based on the costs of the predecessor state. 
+	Thanks to this function the search for the final state behaves as an iterative deepening depth first search.
+
+	The one time costs of the predecessor were first use as cost limit to decide which node is worth expanding. Nevertheless Sokoban requires sometimes to expand a node that has higher costs than it's predecessor to find the solution state. 
+	So furthermore an implementation of a factor for the predecessor costs were made to be able to reach also those nodes by restarting the IDA* algorithm with an increased factor until the solution state is found. But during testing it became clear that it would be necessary to reset the whole agent and all data like there was no search operation at all to be able to go through the whole tree again. Implementing this would have needed an amount of time that sadly was not left in the end of the project.
+
+        %\cite{solving_soko}
+
+\newpage
+\section{Results}
+After having implemented all our different techniques, we have finally reached a total of \emph{76 boards solved} when we run our script on the test server provided. When we submitted, we obtained results not quite as good since we solved around 70\% of boards, but still satisfying.
+
+
+
+Even though we solve most boards provided, there are still some boards that we are not able to solve. Two main reasons have been noticed. First, since we use a heuristic which favours states in which boxes are closer to their goals, it makes boards which have to be solved by using a huge detour very difficult to be solved fast. The heuristic function has the advantage of running really fast, but it is not really smart. 
+We had to choose between an intelligent heuristic function requiring large computations and a simple and fast function requiring almost no computation. We chose this second solution.
+\begin{verbatim}
+###################  We have to push some boxes over a lot of states
+#    $   .........#  which does not give us a gain in the heuristic
+# $ $#$$ $ $ $ $  #  function. Hence we will not converge very fast to
+#      ############  a solution.
+########
+\end{verbatim}
+
+
+We have noticed a second reason explaining unsolved boards. When there are many boxes, our solver often does not find the correct solution. Obviously, this is not a real surprise since the more boxes we have, the more different states we are supposed to explore. By adding just a few boxes, the search tree increases a lot and make the research much more difficult.
+
+\begin{verbatim}
+############
+##         #
+## $$$ $## #
+##  .... # #
+#   *****  #       An example of a board with too many
+# ##.....###       boxes for our solver
+#   $$$$$  #
+## ## # ## #
+##    @    #
+############
+\end{verbatim}
+
+If we where asked to solve the problem again we would probably start out in a simular way
+and append what we have already done.  Some ideas of what we could do to get a better solution
+would be to use a better heuristic function and solve the problem both from final state to initial state
+as well as from initial state to final state to reduce the search tree.
+
+%\section{Conclusions}
+   
+      
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%  Appendix  
+%%%%%%
+%\appendix
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%
+%%%%%%    
+%%%%%% 
+\bibliographystyle{plain} 
+\bibliography{refs.bib}	
+\end{document}          

@@ -1,0 +1,35 @@
+   
+@ONLINE{wiki_soko,
+  author = "Unknown author",
+  title = "sokoban on wikipedia",
+  month = "Oktober",
+  year = "2012",
+  url = "http://en.wikipedia.org/wiki/Sokoban"
+}
+
+
+@MISC{frozen_deadlock,
+author = {Unknown author},
+title = {sokoban wiki, frozen deadlock},
+month = {October},
+year = {2012},
+howpublished={\url{http://sokobano.de/wiki/index.php?title=How_to_detect_deadlocks}}
+}
+
+@MASTERSTHESIS{solving_soko,
+        author = "Timo Virkkala",
+        title = "Solving Sokoban",
+        school = "UNIVERSITY OF HELSINKI",
+        %month = "April"
+        year = "2011"
+}
+
+@ARTICLE{Zurek:1993,
+   AUTHOR  = {Timo Virkkala},
+   TITLE   = {Interannual Variability of planet-encircling dust activity on {M}ars},  
+   YEAR    = {1993},
+   JOURNAL = jgr,
+   VOLUME  = {98},
+   NUMBER  = {E2},
+   PAGES   = {3247--3259}
+}

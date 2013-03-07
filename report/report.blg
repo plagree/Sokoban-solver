@@ -1,0 +1,52 @@
+This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
+The top-level auxiliary file: report.aux
+The style file: plain.bst
+Database file #1: refs.bib.bib
+You're missing a field name---line 24 of file refs.bib.bib
+ :         
+ :         %month = "April"
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+Warning--empty year in solving_soko
+You've used 3 entries,
+            2118 wiz_defined-function locations,
+            509 strings with 4257 characters,
+and the built_in function-call counts, 635 in all, are:
+= -- 60
+> -- 21
+< -- 0
++ -- 9
+- -- 6
+* -- 27
+:= -- 118
+add.period$ -- 9
+call.type$ -- 3
+change.case$ -- 12
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 22
+empty$ -- 59
+format.name$ -- 6
+if$ -- 130
+int.to.chr$ -- 0
+int.to.str$ -- 3
+missing$ -- 0
+newline$ -- 18
+num.names$ -- 6
+pop$ -- 21
+preamble$ -- 1
+purify$ -- 9
+quote$ -- 0
+skip$ -- 19
+stack$ -- 0
+substring$ -- 15
+swap$ -- 2
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 12
+warning$ -- 1
+while$ -- 6
+width$ -- 4
+write$ -- 32
+(There was 1 error message)
